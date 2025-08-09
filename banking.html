@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureBank - Online Banking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5D5CDE',
+                        'primary-dark': '#4B4BC8',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .face-scanner {
+            background: linear-gradient(45deg, #5D5CDE, #4B4BC8);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .scan-overlay {
+            border: 3px solid #5D5CDE;
+            border-radius: 50%;
+            animation: scan 3s infinite;
+        }
+        
+        @keyframes scan {
+            0% { transform: scale(0.8); opacity: 0.3; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(0.8); opacity: 0.3; }
+        }
+        
+        .account-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .account-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .transaction-item {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .transaction-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+        }
+        
+        .dark .transaction-item:hover {
+            background: linear-gradient(135deg, #374151, #4b5563);
+        }
+        
+        .quick-action {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .quick-action:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        
+        .quick-action:active {
+            transform: translateY(-1px) scale(0.98);
+        }
+        
+        .form-input {
+            transition: all 0.3s ease;
+        }
+        
+        .form-input:focus {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(93, 92, 222, 0.15);
+        }
+        
+        .btn-primary {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(93, 92, 222, 0.3);
+        }
+        
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+        
+        .slide-in {
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .loading-dots::after {
+            content: '';
+            animation: dots 1.5s infinite;
+        }
+        
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+        
+        .balance-animation {
+            animation: countUp 2s ease-out;
+        }
+        
+        @keyframes countUp {
+            from {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        .mobile-nav {
+            transition: transform 0.3s ease;
+        }
+        
+        .mobile-nav.open {
+            transform: translateX(0);
+        }
+        
+        @media (max-width: 640px) {
+            .account-card {
+                margin-bottom: 1rem;
+            }
+            
+            .quick-action {
+                padding: 1rem;
+            }
+            
+            .transaction-item {
+                padding: 0.75rem;
+            }
+        }
+        
+        .ripple {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .ripple::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .ripple:active::before {
+            width: 300px;
+            height: 300px;
+        }
+    </style>
+</head>
+<body class="bg-white dark:bg-gray-900 font-sans transition-colors duration-300">
+    <!-- Header -->
+    <header class="bg-primary text-white shadow-lg">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+                        <span class="text-primary font-bold text-lg">S</span>
+                    </div>
+                    <h1 class="text-2xl font-bold">SecureBank</h1>
+                </div>
+                <div class="text-sm opacity-90">
+                    Secure • Trusted • Reliable
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Login/Signup Container -->
+    <div id="authContainer" class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center px-4 py-8">
+        <div class="max-w-md w-full">
+            <!-- Login Form -->
+            <div id="loginForm" class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold text-gray-800 dark:text-white">Welcome Back</h2>
+                    <p class="text-gray-600 dark:text-gray-400 mt-2">Sign in to your account</p>
+                </div>
+
+                <form id="loginFormSubmit" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Email or Phone Number
+                        </label>
+                        <input type="text" id="loginIdentifier" required
+                            class="form-input w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                            placeholder="Enter email or phone number">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Password
+                        </label>
+                        <input type="password" id="loginPassword" required
+                            class="form-input w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                            placeholder="Enter your password">
+                    </div>
+
+                    <button type="submit"
+                        class="btn-primary ripple w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-4 rounded-lg">
+                        Continue to Face Verification
+                    </button>
+                </form>
+
+                <div class="mt-6 text-center">
+                    <p class="text-gray-600 dark:text-gray-400">
+                        Don't have an account?
+                        <button onclick="showSignup()" class="text-primary hover:underline font-medium">Sign up</button>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Signup Form -->
+            <div id="signupForm" class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 hidden">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold text-gray-800 dark:text-white">Create Account</h2>
+                    <p class="text-gray-600 dark:text-gray-400 mt-2">Join SecureBank today</p>
+                </div>
+
+                <form id="signupFormSubmit" class="space-y-6">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                First Name
+                            </label>
+                            <input type="text" id="firstName" required
+                                class="form-input w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                                placeholder="First name">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Last Name
+                            </label>
+                            <input type="text" id="lastName" required
+                                class="form-input w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                                placeholder="Last name">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Email Address
+                        </label>
+                        <input type="email" id="signupEmail" required
+                            class="form-input w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                            placeholder="Enter your email">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Phone Number
+                        </label>
+                        <input type="tel" id="signupPhone" required
+                            class="form-input w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                            placeholder="Enter your phone number">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Password
+                        </label>
+                        <input type="password" id="signupPassword" required
+                            class="form-input w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                            placeholder="Create a password">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Confirm Password
+                        </label>
+                        <input type="password" id="confirmPassword" required
+                            class="form-input w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                            placeholder="Confirm your password">
+                    </div>
+
+                    <button type="submit"
+                        class="btn-primary ripple w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-4 rounded-lg">
+                        Continue to Face Registration
+                    </button>
+                </form>
+
+                <div class="mt-6 text-center">
+                    <p class="text-gray-600 dark:text-gray-400">
+                        Already have an account?
+                        <button onclick="showLogin()" class="text-primary hover:underline font-medium">Sign in</button>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Face Recognition -->
+            <div id="faceRecognition" class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 hidden">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold text-gray-800 dark:text-white" id="faceTitle">Face Verification</h2>
+                    <p class="text-gray-600 dark:text-gray-400 mt-2" id="faceSubtitle">Please look at the camera</p>
+                </div>
+
+                <div class="relative mb-8">
+                    <div class="w-64 h-64 mx-auto bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center relative overflow-hidden">
+                        <div class="face-scanner w-full h-full rounded-full flex items-center justify-center">
+                            <span class="text-white text-6xl">👤</span>
+                        </div>
+                        <div class="scan-overlay absolute inset-4"></div>
+                    </div>
+                    <div id="scanningText" class="text-center mt-4 text-primary font-medium">
+                        Initializing camera...
+                    </div>
+                </div>
+
+                <div class="text-center space-y-4">
+                    <button onclick="startFaceRecognition()" id="startScanBtn"
+                        class="bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-6 rounded-lg transition duration-300">
+                        Start Verification
+                    </button>
+                    <div>
+                        <button onclick="skipFaceRecognition()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-sm">
+                            Skip for now (Less secure)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Banking Interface -->
+    <div id="bankingInterface" class="hidden min-h-screen bg-gray-50 dark:bg-gray-900">
+        <!-- Navigation -->
+        <nav class="bg-white dark:bg-gray-800 shadow-lg border-b dark:border-gray-700">
+            <div class="container mx-auto px-4">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center space-x-4">
+                        <h1 class="text-xl font-bold text-gray-800 dark:text-white">Dashboard</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span class="text-gray-600 dark:text-gray-400" id="userGreeting">Welcome back!</span>
+                        <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition duration-300">
+                            Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="container mx-auto px-4 py-8">
+            <!-- Account Overview -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="account-card text-white p-6 rounded-2xl shadow-lg">
+                    <h3 class="text-lg font-semibold opacity-90">Checking Account</h3>
+                    <p class="text-3xl font-bold mt-2">$12,450.80</p>
+                    <p class="text-sm opacity-75 mt-1">****1234</p>
+                </div>
+                <div class="bg-green-500 text-white p-6 rounded-2xl shadow-lg">
+                    <h3 class="text-lg font-semibold opacity-90">Savings Account</h3>
+                    <p class="text-3xl font-bold mt-2">$45,230.15</p>
+                    <p class="text-sm opacity-75 mt-1">****5678</p>
+                </div>
+                <div class="bg-orange-500 text-white p-6 rounded-2xl shadow-lg">
+                    <h3 class="text-lg font-semibold opacity-90">Credit Card</h3>
+                    <p class="text-3xl font-bold mt-2">$2,340.50</p>
+                    <p class="text-sm opacity-75 mt-1">Available: $7,659.50</p>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-8">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">Quick Actions</h2>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <button class="quick-action flex flex-col items-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30" onclick="showActionModal('Transfer Money')">
+                        <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mb-3">
+                            <span class="text-white text-xl">💸</span>
+                        </div>
+                        <span class="text-blue-700 dark:text-blue-300 font-medium">Transfer</span>
+                    </button>
+                    <button class="quick-action flex flex-col items-center p-4 bg-green-50 dark:bg-green-900/20 rounded-xl hover:bg-green-100 dark:hover:bg-green-900/30" onclick="showActionModal('Pay Bills')">
+                        <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mb-3">
+                            <span class="text-white text-xl">💳</span>
+                        </div>
+                        <span class="text-green-700 dark:text-green-300 font-medium">Pay Bills</span>
+                    </button>
+                    <button class="quick-action flex flex-col items-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900/30" onclick="showActionModal('Mobile Deposit')">
+                        <div class="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mb-3">
+                            <span class="text-white text-xl">💰</span>
+                        </div>
+                        <span class="text-purple-700 dark:text-purple-300 font-medium">Deposit</span>
+                    </button>
+                    <button class="quick-action flex flex-col items-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl hover:bg-orange-100 dark:hover:bg-orange-900/30" onclick="showActionModal('View Reports')">
+                        <div class="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center mb-3">
+                            <span class="text-white text-xl">📊</span>
+                        </div>
+                        <span class="text-orange-700 dark:text-orange-300 font-medium">Reports</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Recent Transactions -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">Recent Transactions</h2>
+                <div class="space-y-4">
+                    <div class="transaction-item flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                                <span class="text-white text-sm">💰</span>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-800 dark:text-white">Salary Deposit</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Dec 15, 2024</p>
+                            </div>
+                        </div>
+                        <span class="font-bold text-green-600">+$3,200.00</span>
+                    </div>
+                    <div class="transaction-item flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">
+                                <span class="text-white text-sm">🏪</span>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-800 dark:text-white">Grocery Store</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Dec 14, 2024</p>
+                            </div>
+                        </div>
+                        <span class="font-bold text-red-600">-$127.45</span>
+                    </div>
+                    <div class="transaction-item flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                                <span class="text-white text-sm">⚡</span>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-800 dark:text-white">Electric Bill</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Dec 13, 2024</p>
+                            </div>
+                        </div>
+                        <span class="font-bold text-red-600">-$89.20</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Modal for Alerts -->
+    <div id="customModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-sm w-full mx-4 slide-in">
+            <p id="modalMessage" class="text-gray-700 dark:text-gray-300 mb-4"></p>
+            <div class="flex justify-end">
+                <button onclick="closeModal()" class="px-4 py-2 bg-primary text-white hover:bg-primary-dark rounded transition-all duration-300">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Modal -->
+    <div id="actionModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-2xl max-w-md w-full mx-4 slide-in">
+            <div class="text-center mb-6">
+                <h3 id="actionTitle" class="text-2xl font-bold text-gray-800 dark:text-white mb-2"></h3>
+                <p class="text-gray-600 dark:text-gray-400">Feature coming soon!</p>
+            </div>
+            <div class="text-center">
+                <button onclick="closeActionModal()" class="btn-primary ripple bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-6 rounded-lg">
+                    Got it
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction Detail Modal -->
+    <div id="transactionModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-2xl max-w-md w-full mx-4 slide-in">
+            <div class="text-center mb-6">
+                <div id="transactionIcon" class="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"></div>
+                <h3 id="transactionTitle" class="text-2xl font-bold text-gray-800 dark:text-white mb-2"></h3>
+                <p id="transactionAmount" class="text-3xl font-bold mb-2"></p>
+                <p id="transactionDate" class="text-gray-600 dark:text-gray-400"></p>
+            </div>
+            <div class="space-y-3 mb-6">
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">Transaction ID:</span>
+                    <span id="transactionId" class="font-mono text-sm"></span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">Status:</span>
+                    <span class="text-green-600 font-semibold">Completed</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">Account:</span>
+                    <span>****1234</span>
+                </div>
+            </div>
+            <div class="text-center">
+                <button onclick="closeTransactionModal()" class="btn-primary ripple bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-6 rounded-lg">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl text-center">
+            <div class="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p class="text-gray-700 dark:text-gray-300 loading-dots">Processing</p>
+        </div>
+    </div>
+
+    <script>
+        // Dark mode detection
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+
+        // User data storage simulation
+        let currentUser = null;
+        let isSignupMode = false;
+
+        // Custom modal functions
+        function showAlert(message) {
+            document.getElementById('modalMessage').textContent = message;
+            document.getElementById('customModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('customModal').classList.add('hidden');
+        }
+
+        // Form switching functions
+        function showLogin() {
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('signupForm').classList.add('hidden');
+            document.getElementById('faceRecognition').classList.add('hidden');
+            isSignupMode = false;
+        }
+
+        function showSignup() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('signupForm').classList.remove('hidden');
+            document.getElementById('faceRecognition').classList.add('hidden');
+            isSignupMode = true;
+        }
+
+        function showFaceRecognition(isSignup = false) {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('signupForm').classList.add('hidden');
+            document.getElementById('faceRecognition').classList.remove('hidden');
+            
+            if (isSignup) {
+                document.getElementById('faceTitle').textContent = 'Face Registration';
+                document.getElementById('faceSubtitle').textContent = 'Register your face for secure access';
+            } else {
+                document.getElementById('faceTitle').textContent = 'Face Verification';
+                document.getElementById('faceSubtitle').textContent = 'Please look at the camera';
+            }
+        }
+
+        // Validation functions
+        function validateEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        }
+
+        function validatePhone(phone) {
+            const re = /^[\+]?[1-9][\d]{0,15}$/;
+            return re.test(phone.replace(/[\s\-\(\)]/g, ''));
+        }
+
+        function isEmailOrPhone(input) {
+            return validateEmail(input) || validatePhone(input);
+        }
+
+        // Login form handler
+        document.getElementById('loginFormSubmit').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const identifier = document.getElementById('loginIdentifier').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!identifier || !password) {
+                showAlert('Please fill in all fields');
+                return;
+            }
+            
+            if (!isEmailOrPhone(identifier)) {
+                showAlert('Please enter a valid email address or phone number');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showAlert('Password must be at least 6 characters long');
+                return;
+            }
+            
+            // Simulate checking credentials
+            currentUser = {
+                identifier: identifier,
+                name: 'John Doe'
+            };
+            
+            showFaceRecognition(false);
+        });
+
+        // Signup form handler
+        document.getElementById('signupFormSubmit').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
+            const email = document.getElementById('signupEmail').value.trim();
+            const phone = document.getElementById('signupPhone').value.trim();
+            const password = document.getElementById('signupPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (!firstName || !lastName || !email || !phone || !password || !confirmPassword) {
+                showAlert('Please fill in all fields');
+                return;
+            }
+            
+            if (!validateEmail(email)) {
+                showAlert('Please enter a valid email address');
+                return;
+            }
+            
+            if (!validatePhone(phone)) {
+                showAlert('Please enter a valid phone number');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showAlert('Password must be at least 6 characters long');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                showAlert('Passwords do not match');
+                return;
+            }
+            
+            // Simulate account creation
+            currentUser = {
+                identifier: email,
+                name: `${firstName} ${lastName}`,
+                phone: phone
+            };
+            
+            showFaceRecognition(true);
+        });
+
+        // Face recognition simulation
+        function startFaceRecognition() {
+            const scanningText = document.getElementById('scanningText');
+            const startBtn = document.getElementById('startScanBtn');
+            
+            startBtn.disabled = true;
+            startBtn.textContent = 'Scanning...';
+            
+            // Simulate scanning process
+            let step = 0;
+            const steps = [
+                'Detecting face...',
+                'Analyzing features...',
+                'Verifying identity...',
+                'Authentication successful!'
+            ];
+            
+            const interval = setInterval(() => {
+                if (step < steps.length) {
+                    scanningText.textContent = steps[step];
+                    step++;
+                } else {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        showBankingInterface();
+                    }, 1000);
+                }
+            }, 1500);
+        }
+
+        function skipFaceRecognition() {
+            showAlert('Face recognition skipped. Your account security may be reduced.');
+            setTimeout(() => {
+                showBankingInterface();
+            }, 2000);
+        }
+
+        // Show banking interface
+        function showBankingInterface() {
+            document.getElementById('authContainer').classList.add('hidden');
+            document.getElementById('bankingInterface').classList.remove('hidden');
+            
+            if (currentUser) {
+                document.getElementById('userGreeting').textContent = `Welcome back, ${currentUser.name}!`;
+            }
+        }
+
+        // Action modal functions
+        function showActionModal(actionName) {
+            document.getElementById('actionTitle').textContent = actionName;
+            document.getElementById('actionModal').classList.remove('hidden');
+        }
+
+        function closeActionModal() {
+            document.getElementById('actionModal').classList.add('hidden');
+        }
+
+        // Transaction modal functions
+        function showTransactionModal(transaction) {
+            document.getElementById('transactionTitle').textContent = transaction.title;
+            document.getElementById('transactionAmount').textContent = transaction.amount;
+            document.getElementById('transactionAmount').className = transaction.amount.startsWith('+') ? 'text-3xl font-bold mb-2 text-green-600' : 'text-3xl font-bold mb-2 text-red-600';
+            document.getElementById('transactionDate').textContent = transaction.date;
+            document.getElementById('transactionId').textContent = transaction.id;
+            document.getElementById('transactionIcon').innerHTML = `<span class="text-white text-2xl">${transaction.icon}</span>`;
+            document.getElementById('transactionIcon').className = `w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${transaction.iconBg}`;
+            document.getElementById('transactionModal').classList.remove('hidden');
+        }
+
+        function closeTransactionModal() {
+            document.getElementById('transactionModal').classList.add('hidden');
+        }
+
+        // Loading overlay
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+        }
+
+        // Enhanced transaction interactions
+        function addTransactionClickHandlers() {
+            const transactions = document.querySelectorAll('.transaction-item');
+            const transactionData = [
+                {
+                    title: 'Salary Deposit',
+                    amount: '+$3,200.00',
+                    date: 'Dec 15, 2024 at 9:00 AM',
+                    id: 'TXN001234567',
+                    icon: '💰',
+                    iconBg: 'bg-green-500'
+                },
+                {
+                    title: 'Grocery Store',
+                    amount: '-$127.45',
+                    date: 'Dec 14, 2024 at 2:30 PM',
+                    id: 'TXN001234568',
+                    icon: '🏪',
+                    iconBg: 'bg-red-500'
+                },
+                {
+                    title: 'Electric Bill',
+                    amount: '-$89.20',
+                    date: 'Dec 13, 2024 at 11:15 AM',
+                    id: 'TXN001234569',
+                    icon: '⚡',
+                    iconBg: 'bg-blue-500'
+                }
+            ];
+
+            transactions.forEach((transaction, index) => {
+                transaction.addEventListener('click', () => {
+                    showTransactionModal(transactionData[index]);
+                });
+            });
+        }
+
+        // Enhanced form validation with visual feedback
+        function addFormValidation() {
+            const inputs = document.querySelectorAll('.form-input');
+            
+            inputs.forEach(input => {
+                input.addEventListener('input', function() {
+                    this.classList.remove('border-red-500', 'border-green-500');
+                    
+                    if (this.value.trim()) {
+                        if (this.type === 'email' && !validateEmail(this.value)) {
+                            this.classList.add('border-red-500');
+                        } else if (this.type === 'tel' && !validatePhone(this.value)) {
+                            this.classList.add('border-red-500');
+                        } else {
+                            this.classList.add('border-green-500');
+                        }
+                    }
+                });
+
+                input.addEventListener('blur', function() {
+                    if (!this.value.trim()) {
+                        this.classList.remove('border-red-500', 'border-green-500');
+                    }
+                });
+            });
+        }
+
+        // Balance animation
+        function animateBalances() {
+            const balances = document.querySelectorAll('.account-card p:nth-child(2)');
+            balances.forEach(balance => {
+                balance.classList.add('balance-animation');
+            });
+        }
+
+        // Add touch/swipe support for mobile
+        function addTouchSupport() {
+            let startX, startY, distX, distY;
+            const threshold = 150;
+            const restraint = 100;
+            const allowedTime = 300;
+            let startTime;
+
+            document.addEventListener('touchstart', function(e) {
+                const touchobj = e.changedTouches[0];
+                startX = touchobj.pageX;
+                startY = touchobj.pageY;
+                startTime = new Date().getTime();
+            });
+
+            document.addEventListener('touchend', function(e) {
+                const touchobj = e.changedTouches[0];
+                distX = touchobj.pageX - startX;
+                distY = touchobj.pageY - startY;
+                const elapsedTime = new Date().getTime() - startTime;
+
+                if (elapsedTime <= allowedTime) {
+                    if (Math.abs(distX) >= threshold && Math.abs(distY) <= restraint) {
+                        // Add swipe gestures for navigation if needed
+                        if (distX > 0) {
+                            // Right swipe
+                        } else {
+                            // Left swipe
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize enhanced features
+        function initializeEnhancements() {
+            addFormValidation();
+            addTouchSupport();
+            
+            // Add transition classes to elements
+            document.querySelectorAll('.account-card, .quick-action, .transaction-item').forEach(el => {
+                el.classList.add('fade-in');
+            });
+        }
+
+        // Enhanced logout with confirmation
+        function logout() {
+            showLoading();
+            
+            setTimeout(() => {
+                hideLoading();
+                currentUser = null;
+                document.getElementById('authContainer').classList.remove('hidden');
+                document.getElementById('bankingInterface').classList.add('hidden');
+                showLogin();
+                
+                // Reset forms
+                document.getElementById('loginFormSubmit').reset();
+                document.getElementById('signupFormSubmit').reset();
+                
+                // Reset form validation styles
+                document.querySelectorAll('.form-input').forEach(input => {
+                    input.classList.remove('border-red-500', 'border-green-500');
+                });
+            }, 1000);
+        }
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeEnhancements();
+        });
+
+        // Override showBankingInterface to include animations
+        const originalShowBankingInterface = showBankingInterface;
+        showBankingInterface = function() {
+            originalShowBankingInterface();
+            setTimeout(() => {
+                animateBalances();
+                addTransactionClickHandlers();
+            }, 100);
+        };
+    </script>
+</body>
+</html>
